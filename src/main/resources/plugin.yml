@@ -1,0 +1,4 @@
+name: HotSpring
+version: '${project.version}'
+main: org.milkteamc.hotspring.HotSpring
+api-version: '1.20'
