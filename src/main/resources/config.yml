@@ -1,0 +1,28 @@
+# HotSpring 插件設定
+# Discord 支援群組：https://discord.gg/uQ4UXANnP2
+
+# 间隔秒数
+IntervalSeconds: 5
+
+# 每次泡温泉获得的金币数量
+CoinAmount: 1
+
+# 以下內容建議在遊戲中透過 /hs1 設定，因為在此設定容易導致錯誤
+# 温泉1的位置
+HotSpring1:
+  World: world
+  X: 100.0
+  Y: 64.0
+  Z: 200.0
+  Yaw: 0.0
+  Pitch: 0.0
+
+# 以下內容建議在遊戲中透過 /hs2 設定，因為在此設定容易導致錯誤
+# 温泉2的位置
+HotSpring2:
+  World: world
+  X: 150.0
+  Y: 64.0
+  Z: 250.0
+  Yaw: 0.0
+  Pitch: 0.0

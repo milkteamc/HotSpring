@@ -2,3 +2,19 @@ name: HotSpring
 version: '${project.version}'
 main: org.milkteamc.hotspring.HotSpring
 api-version: '1.20'
+author: Maoyue
+description: A plugin that allows players to enjoy hot springs.
+depend: [Vault]
+
+commands:
+  hs1:
+    description: Set the first hot spring location.
+    usage: /hs1
+  hs2:
+    description: Set the second hot spring location.
+    usage: /hs2
+
+permissions:
+  hotspring.admin:
+    description: Allows access to all HotSpring commands.
+    default: op
