@@ -16,6 +16,8 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+
 public class HotSpring extends JavaPlugin implements Listener {
     private FileConfiguration config;
     private Location hotSpring1;
@@ -23,6 +25,8 @@ public class HotSpring extends JavaPlugin implements Listener {
     private int intervalSeconds;
     private int coinAmount;
     private Economy economy;
+
+    private final HashMap<Player, Long> playerCooldowns = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -37,8 +41,6 @@ public class HotSpring extends JavaPlugin implements Listener {
     }
 
     private void loadConfig() {
-        getConfig().options().copyDefaults(true);
-        saveConfig();
         config = getConfig();
         hotSpring1 = getLocationFromConfig("HotSpring1");
         hotSpring2 = getLocationFromConfig("HotSpring2");
@@ -78,14 +80,28 @@ public class HotSpring extends JavaPlugin implements Listener {
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (isInHotSpring(player)) {
-                        int seconds = intervalSeconds;
-                        String subtitle = ChatColor.AQUA + "在温泉中，每 " + seconds + " 秒可以獲得" + coinAmount + "個金幣！";
-                        sendSubtitle(player, subtitle);
-                        giveCoins(player, coinAmount);
+                        if (checkCooldown(player)) {
+                            int seconds = intervalSeconds;
+                            String subtitle = ChatColor.AQUA + "在温泉中，每 " + seconds + " 秒可以獲得" + coinAmount + "個金幣！";
+                            sendSubtitle(player, subtitle);
+                            giveCoins(player, coinAmount);
+                        }
                     }
                 }
             }
         }.runTaskTimer(this, 0, intervalSeconds * 20);
+    }
+
+    private boolean checkCooldown(Player player) {
+        long currentTime = System.currentTimeMillis();
+        if (playerCooldowns.containsKey(player)) {
+            long lastRewardTime = playerCooldowns.get(player);
+            if (currentTime - lastRewardTime < (intervalSeconds * 1000)) {
+                return false; // Player is still on cooldown
+            }
+        }
+        playerCooldowns.put(player, currentTime);
+        return true; // Player is not on cooldown, grant reward
     }
 
     private boolean isInHotSpring(Player player) {
@@ -96,16 +112,16 @@ public class HotSpring extends JavaPlugin implements Listener {
     }
 
     private boolean isInsideRegion(Location location, Location pos1, Location pos2) {
-        double x1 = Math.min(pos1.getX(), pos2.getX());
-        double y1 = Math.min(pos1.getY(), pos2.getY());
-        double z1 = Math.min(pos1.getZ(), pos2.getZ());
-        double x2 = Math.max(pos1.getX(), pos2.getX());
-        double y2 = Math.max(pos1.getY(), pos2.getY());
-        double z2 = Math.max(pos1.getZ(), pos2.getZ());
+        double minX = Math.min(pos1.getX(), pos2.getX());
+        double minY = Math.min(pos1.getY(), pos2.getY());
+        double minZ = Math.min(pos1.getZ(), pos2.getZ());
+        double maxX = Math.max(pos1.getX(), pos2.getX());
+        double maxY = Math.max(pos1.getY(), pos2.getY());
+        double maxZ = Math.max(pos1.getZ(), pos2.getZ());
         double x = location.getX();
         double y = location.getY();
         double z = location.getZ();
-        return (x >= x1 && x <= x2 && y >= y1 && y <= y2 && z >= z1 && z <= z2);
+        return (x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ);
     }
 
     private void sendSubtitle(Player player, String subtitle) {
@@ -114,7 +130,7 @@ public class HotSpring extends JavaPlugin implements Listener {
 
     private void giveCoins(Player player, double amount) {
         if (economy != null) {
-            economy.depositPlayer(player, amount);
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> economy.depositPlayer(player, amount));
         }
     }
 
@@ -158,10 +174,12 @@ public class HotSpring extends JavaPlugin implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (isInHotSpring(player)) {
-            int seconds = intervalSeconds;
-            String message = ChatColor.AQUA + "在温泉中，每 " + seconds + " 秒可以獲得" + coinAmount + "個金幣！";
-            sendSubtitle(player, message);
-            giveCoins(player, coinAmount);
+            if (checkCooldown(player)) {
+                int seconds = intervalSeconds;
+                String message = ChatColor.AQUA + "在温泉中，每 " + seconds + " 秒可以獲得" + coinAmount + "個金幣！";
+                sendSubtitle(player, message);
+                giveCoins(player, coinAmount);
+            }
         }
     }
 }
